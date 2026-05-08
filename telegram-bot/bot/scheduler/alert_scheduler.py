@@ -14,7 +14,7 @@ class AlertScheduler:
         self.bot = bot
         self.scheduler = AsyncIOScheduler()
 
-    def start(self):
+    async def start(self):
         self.scheduler.add_job(
             self.send_daily_alerts,
             trigger="cron",

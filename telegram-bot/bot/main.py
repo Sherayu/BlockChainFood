@@ -25,12 +25,18 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.error(f"Update {update} caused error {context.error}")
 
 
+async def post_init(app):
+    scheduler = AlertScheduler(app.bot)
+    await scheduler.start()
+    logger.info("Alert scheduler started")
+
+
 def main():
     if not TELEGRAM_BOT_TOKEN:
         logger.error("TELEGRAM_BOT_TOKEN is not set")
         return
 
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).post_init(post_init).build()
 
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
@@ -49,9 +55,6 @@ def main():
     app.add_handler(CallbackQueryHandler(ingredient_action_callback, pattern=r"^ing_"))
 
     app.add_error_handler(error_handler)
-
-    scheduler = AlertScheduler(app.bot)
-    scheduler.start()
 
     logger.info("Telegram bot started")
     app.run_polling()
