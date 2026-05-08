@@ -171,7 +171,7 @@ FastAPI-based REST API with auto-generated OpenAPI documentation.
 ```mermaid
 graph LR
     subgraph Endpoints["API Endpoints"]
-        A[/api/v1/config/alerts]
+        A["/api/v1/config/alerts"]
         B[/api/v1/foods/trending]
         C[/api/v1/foods/{id}/recipes]
         D[/api/v1/recipes/{id}]
