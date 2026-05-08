@@ -1,0 +1,735 @@
+{
+  "info": {
+    "name": "Food Discovery Platform API",
+    "description": "Complete API test collection for the Food Discovery Platform. All endpoints for configuration, trending foods, recipes, and ingredient management.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "GET - Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response has status field\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data).to.have.property('status');",
+                  "    pm.expect(data.status).to.eql('healthy');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Configuration",
+      "item": [
+        {
+          "name": "GET - Get Alert Configuration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response has required fields\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data).to.have.property('frequency');",
+                  "    pm.expect(data).to.have.property('categories');",
+                  "    pm.expect(data).to.have.property('regions');",
+                  "    pm.expect(data).to.have.property('active');",
+                  "    pm.expect(data).to.have.property('id');",
+                  "});",
+                  "pm.test(\"Default values are correct\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.frequency).to.eql('daily');",
+                  "    pm.expect(data.active).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/config/alerts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "config", "alerts"]
+            }
+          }
+        },
+        {
+          "name": "PUT - Update Frequency to Weekly",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Frequency updated to weekly\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.frequency).to.eql('weekly');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"frequency\": \"weekly\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/config/alerts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "config", "alerts"]
+            }
+          }
+        },
+        {
+          "name": "PUT - Update Categories and Regions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Categories updated\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.categories).to.include('desserts');",
+                  "    pm.expect(data.categories).to.include('baking');",
+                  "});",
+                  "pm.test(\"Regions updated\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.regions).to.include('indian');",
+                  "    pm.expect(data.regions).to.include('global');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"frequency\": \"daily\",\n  \"categories\": [\"desserts\", \"baking\"],\n  \"regions\": [\"indian\", \"global\"],\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/config/alerts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "config", "alerts"]
+            }
+          }
+        },
+        {
+          "name": "PUT - Disable Alerts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Alerts disabled\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.active).to.be.false;",
+                  "});",
+                  "pm.environment.set(\"prev_config\", JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/config/alerts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "config", "alerts"]
+            }
+          }
+        },
+        {
+          "name": "GET - All Configurations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returns array\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(Array.isArray(data)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/config/alerts/all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "config", "alerts", "all"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories & Regions",
+      "item": [
+        {
+          "name": "GET - List Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returns food categories\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(Array.isArray(data)).to.be.true;",
+                  "    pm.expect(data.length).to.be.at.least(1);",
+                  "    pm.expect(data[0]).to.have.property('name');",
+                  "    pm.expect(data[0]).to.have.property('id');",
+                  "    pm.expect(data[0]).to.have.property('icon');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "categories"]
+            }
+          }
+        },
+        {
+          "name": "GET - List Regions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returns regions\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(Array.isArray(data)).to.be.true;",
+                  "    pm.expect(data.length).to.be.at.least(1);",
+                  "    pm.expect(data[0]).to.have.property('name');",
+                  "    pm.expect(data[0]).to.have.property('id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/regions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "regions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trending Foods",
+      "item": [
+        {
+          "name": "GET - All Trending Foods",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returns food array\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(Array.isArray(data)).to.be.true;",
+                  "    if (data.length > 0) {",
+                  "        pm.expect(data[0]).to.have.property('name');",
+                  "        pm.expect(data[0]).to.have.property('popularity_score');",
+                  "        pm.expect(data[0]).to.have.property('category');",
+                  "        pm.expect(data[0]).to.have.property('region');",
+                  "        pm.expect(data[0]).to.have.property('id');",
+                  "        pm.environment.set(\"food_id\", data[0].id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/foods/trending?limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "foods", "trending"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Trending by Category (Desserts)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Filters by category\", function () {",
+                  "    const data = pm.response.json();",
+                  "    data.forEach(function(food) {",
+                  "        pm.expect(food.category).to.eql('desserts');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/foods/trending?category=desserts&limit=5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "foods", "trending"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "desserts"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Trending by Region (Indian)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Filters by region\", function () {",
+                  "    const data = pm.response.json();",
+                  "    data.forEach(function(food) {",
+                  "        pm.expect(food.region).to.eql('indian');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/foods/trending?region=indian&limit=5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "foods", "trending"],
+              "query": [
+                {
+                  "key": "region",
+                  "value": "indian"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET - Trending with Invalid Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returns empty array for invalid category\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(Array.isArray(data)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/foods/trending?category=invalid_category&limit=5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "foods", "trending"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "invalid_category"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recipes",
+      "item": [
+        {
+          "name": "GET - Recipes for Food",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returns recipe array\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(Array.isArray(data)).to.be.true;",
+                  "});",
+                  "pm.test(\"First recipe has required fields\", function () {",
+                  "    const data = pm.response.json();",
+                  "    if (data.length > 0) {",
+                  "        pm.expect(data[0]).to.have.property('title');",
+                  "        pm.expect(data[0]).to.have.property('url');",
+                  "        pm.expect(data[0]).to.have.property('id');",
+                  "        pm.environment.set(\"recipe_id\", data[0].id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/foods/{{food_id}}/recipes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "foods", "{{food_id}}", "recipes"]
+            }
+          }
+        },
+        {
+          "name": "GET - Recipe Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Has full recipe details\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data).to.have.property('title');",
+                  "    pm.expect(data).to.have.property('ingredients');",
+                  "    pm.expect(data).to.have.property('steps');",
+                  "    pm.expect(data).to.have.property('url');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "{{recipe_id}}"]
+            }
+          }
+        },
+        {
+          "name": "GET - Recipe Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/00000000-0000-0000-0000-000000000000",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "00000000-0000-0000-0000-000000000000"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ingredients",
+      "item": [
+        {
+          "name": "POST - Extract and Store Ingredients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Ingredients stored successfully\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.status).to.eql('success');",
+                  "    pm.expect(data).to.have.property('ingredients_count');",
+                  "    pm.expect(data).to.have.property('stored_at');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}/ingredients",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "{{recipe_id}}", "ingredients"]
+            }
+          }
+        },
+        {
+          "name": "GET - Get Stored Ingredients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returns ingredients array\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(Array.isArray(data)).to.be.true;",
+                  "    if (data.length > 0) {",
+                  "        pm.expect(data[0]).to.have.property('name');",
+                  "        pm.expect(data[0]).to.have.property('category');",
+                  "        pm.expect(data[0]).to.have.property('stored_at');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}/ingredients",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "{{recipe_id}}", "ingredients"]
+            }
+          }
+        },
+        {
+          "name": "POST - Extract Invalid Recipe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/00000000-0000-0000-0000-000000000000/ingredients",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "00000000-0000-0000-0000-000000000000", "ingredients"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "System Status",
+      "item": [
+        {
+          "name": "GET - Crawler Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Has crawler fields\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data).to.have.property('status');",
+                  "    pm.expect(data).to.have.property('active_spiders');",
+                  "    pm.expect(data).to.have.property('queue_size');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/crawler/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "crawler", "status"]
+            }
+          }
+        },
+        {
+          "name": "GET - Analysis Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Has analysis fields\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data).to.have.property('status');",
+                  "    pm.expect(data).to.have.property('pending_tasks');",
+                  "    pm.expect(data).to.have.property('worker_count');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analysis/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analysis", "status"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "food_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "recipe_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

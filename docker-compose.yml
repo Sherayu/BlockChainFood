@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: food-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-food_discovery}
+      POSTGRES_USER: ${DB_USER:-fooduser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-foodpass123}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - food-discovery-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-fooduser} -d ${DB_NAME:-food_discovery}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: food-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - food-discovery-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: food-api-gateway
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-fooduser}:${DB_PASSWORD:-foodpass123}@postgres:5432/${DB_NAME:-food_discovery}
+      REDIS_URL: redis://redis:6379/0
+      API_HOST: ${API_HOST:-0.0.0.0}
+      API_PORT: ${API_PORT:-8000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food-discovery-network
+    volumes:
+      - logs:/app/logs
+    restart: unless-stopped
+
+  crawler-service:
+    build:
+      context: ./crawler-service
+      dockerfile: Dockerfile
+    container_name: food-crawler
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      API_GATEWAY_URL: http://api-gateway:8000
+      CRAWL_FREQUENCY_MINUTES: ${CRAWL_FREQUENCY_MINUTES:-60}
+      MAX_CONCURRENT_REQUESTS: ${MAX_CONCURRENT_REQUESTS:-10}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - food-discovery-network
+    restart: unless-stopped
+
+  analysis-service:
+    build:
+      context: ./analysis-service
+      dockerfile: Dockerfile
+    container_name: food-analysis
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-fooduser}:${DB_PASSWORD:-foodpass123}@postgres:5432/${DB_NAME:-food_discovery}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_WORKER_COUNT: ${CELERY_WORKER_COUNT:-2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food-discovery-network
+    restart: unless-stopped
+
+  telegram-bot:
+    build:
+      context: ./telegram-bot
+      dockerfile: Dockerfile
+    container_name: food-telegram-bot
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Telegram bot token is required}
+      API_GATEWAY_URL: http://api-gateway:8000
+      DATABASE_URL: postgresql://${DB_USER:-fooduser}:${DB_PASSWORD:-foodpass123}@postgres:5432/${DB_NAME:-food_discovery}
+    depends_on:
+      api-gateway:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    networks:
+      - food-discovery-network
+    restart: unless-stopped
+
+networks:
+  food-discovery-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  logs:
+    driver: local

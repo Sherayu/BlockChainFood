@@ -1,0 +1,4 @@
+from analysis.celery_app import celery_app
+from analysis.tasks.process_crawl import process_crawl_data
+from analysis.tasks.detect_trends import detect_food_trends
+from analysis.tasks.extract_ingredients import extract_ingredients_task
