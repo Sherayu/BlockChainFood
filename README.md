@@ -212,25 +212,25 @@ The extractor backfills `recipe.ingredients` JSONB on first access. Subsequent c
 graph LR
     subgraph Endpoints["API Endpoints"]
         A["/api/v1/config/alerts"]
-        B[/api/v1/foods/trending]
-        C[/api/v1/foods/{id}/recipes]
-        D[/api/v1/recipes/{id}]
-        E[/api/v1/recipes/{id}/ingredients]
-        F[/api/v1/categories]
-        G[/api/v1/regions]
-        H[/api/v1/crawler/status]
-        I[/api/v1/analysis/status]
+        B["/api/v1/foods/trending"]
+        C["/api/v1/foods/{id}/recipes"]
+        D["/api/v1/recipes/{id}"]
+        E["/api/v1/recipes/{id}/ingredients"]
+        F["/api/v1/categories"]
+        G["/api/v1/regions"]
+        H["/api/v1/crawler/status"]
+        I["/api/v1/analysis/status"]
     end
 
     subgraph Services["Service Layer"]
-        J[Config Service]
-        K[Food Service]
-        L[Recipe Service]
-        M[Ingredient Service]
+        J["Config Service"]
+        K["Food Service"]
+        L["Recipe Service"]
+        M["Ingredient Service"]
     end
 
     subgraph Data["Data Layer"]
-        N[(PostgreSQL)]
+        N[("PostgreSQL")]
     end
 
     A --> J
