@@ -46,7 +46,7 @@ class TrendingFoodBase(BaseModel):
 class TrendingFoodResponse(TrendingFoodBase):
     id: UUID
     discovered_at: datetime
-    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True
@@ -145,3 +145,52 @@ class AnalysisStatusResponse(BaseModel):
     trends_identified_today: int = 0
     last_processed: Optional[datetime] = None
     worker_count: int = 0
+
+
+class CrawlerSourceSummary(BaseModel):
+    id: str
+    name: str
+    source_type: str
+    active: bool
+    last_crawl: Optional[datetime] = None
+    total_crawls: int = 0
+    total_items: int = 0
+    error_count: int = 0
+    success_rate: float = 0.0
+
+
+class DataLayerSummary(BaseModel):
+    total_trending_foods: int = 0
+    total_recipes: int = 0
+    total_ingredients: int = 0
+    total_crawl_logs: int = 0
+    foods_by_category: dict = {}
+    recipes_by_source: dict = {}
+    recipes_by_region: dict = {}
+
+
+class BotUsageSummary(BaseModel):
+    total_commands: int = 0
+    unique_users: int = 0
+    commands_by_name: dict = {}
+    usage_by_day: dict = {}
+    total_response_time_ms: int = 0
+    avg_response_time_ms: float = 0.0
+
+
+class AnalyticsConfigSummary(BaseModel):
+    alert_frequency: str = "daily"
+    alert_active: bool = True
+    categories: List[str] = []
+    regions: List[str] = []
+    last_alert_sent: Optional[datetime] = None
+    active_sources: int = 0
+    total_sources: int = 0
+
+
+class BotUsageLogRequest(BaseModel):
+    command: str
+    user_id: int
+    username: Optional[str] = None
+    parameters: Optional[str] = None
+    response_time_ms: Optional[int] = None

@@ -1,0 +1,88 @@
+{
+  "title": "Alert Config & System Health",
+  "uid": "alert-config-health",
+  "tags": ["food-discovery", "config", "health"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Alert Active",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT active::int AS value FROM alert_config ORDER BY created_at DESC LIMIT 1", "refId": "A"}],
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": 0}, {"color": "green", "value": 1}]}}}
+    },
+    {
+      "id": 2,
+      "title": "Alert Frequency",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT frequency::text AS value FROM alert_config ORDER BY created_at DESC LIMIT 1", "refId": "A"}]
+    },
+    {
+      "id": 3,
+      "title": "Last Alert Sent",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 8, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT COALESCE(last_sent::text, 'Never') AS value FROM alert_config ORDER BY created_at DESC LIMIT 1", "refId": "A"}]
+    },
+    {
+      "id": 4,
+      "title": "Categories",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 5, "x": 14, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT categories::text AS value FROM alert_config ORDER BY created_at DESC LIMIT 1", "refId": "A"}]
+    },
+    {
+      "id": 5,
+      "title": "Regions",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 5, "x": 19, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT regions::text AS value FROM alert_config ORDER BY created_at DESC LIMIT 1", "refId": "A"}]
+    },
+    {
+      "id": 6,
+      "title": "Service Health Check",
+      "type": "table",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "datasource": "Loki",
+      "targets": [{
+        "expr": "{job=\"food-discovery\"} |= \"error\" |= ``",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 7,
+      "title": "Error Logs Timeline",
+      "type": "logs",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "datasource": "Loki",
+      "targets": [{
+        "expr": "{job=\"food-discovery\"} |= \"error\"",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 8,
+      "title": "Active Crawl Sources",
+      "type": "table",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT name, source_type, active, last_crawl, crawl_frequency_minutes FROM crawl_source ORDER BY active DESC, name", "refId": "A"}]
+    },
+    {
+      "id": 9,
+      "title": "System Overview",
+      "type": "table",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT 'Trending Foods' AS metric, COUNT(*)::text AS value FROM trending_food UNION ALL SELECT 'Recipes', COUNT(*)::text FROM recipe UNION ALL SELECT 'Stored Ingredients', COUNT(*)::text FROM stored_ingredient UNION ALL SELECT 'Crawl Logs', COUNT(*)::text FROM crawl_log UNION ALL SELECT 'Active Sources', COUNT(*)::text FROM crawl_source WHERE active = TRUE UNION ALL SELECT 'Bot Commands', COUNT(*)::text FROM bot_usage_log", "refId": "A"}]
+    }
+  ]
+}

@@ -10,6 +10,7 @@ class RecipeSiteSpider(scrapy.Spider):
     allowed_domains = [
         "allrecipes.com", "foodnetwork.com",
         "bbcgoodfood.com", "tasty.co",
+        "seriouseats.com",
     ]
 
     start_urls = [
@@ -17,12 +18,17 @@ class RecipeSiteSpider(scrapy.Spider):
         "https://www.foodnetwork.com/recipes",
         "https://www.bbcgoodfood.com/recipes",
         "https://tasty.co/recipes",
+        "https://www.seriouseats.com/recipes",
     ]
 
     custom_settings = {
         "DOWNLOAD_DELAY": 2,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 3,
         "ROBOTSTXT_OBEY": False,
+        "ITEM_PIPELINES": {
+            "crawler.pipelines.normalizer.DataNormalizerPipeline": 200,
+            "crawler.pipelines.publisher.RedisPublisherPipeline": 300,
+        },
     }
 
     def parse(self, response):
@@ -43,7 +49,7 @@ class RecipeSiteSpider(scrapy.Spider):
         return self._extract_from_html(response)
 
     def _is_recipe_page(self, url):
-        if re.search(r'/(recipe|recept)/\d+/', url) or re.search(r'/recipe/', url):
+        if re.search(r'/(recipe|recept|recipes)/', url):
             return True
         return False
 
@@ -51,12 +57,21 @@ class RecipeSiteSpider(scrapy.Spider):
         for script in response.css('script[type="application/ld+json"]::text').getall():
             try:
                 data = json.loads(script)
-                if isinstance(data, list):
-                    for item in data:
-                        if isinstance(item, dict) and item.get("@type") == "Recipe":
-                            return item
-                elif isinstance(data, dict) and data.get("@type") == "Recipe":
-                    return data
+                items = data if isinstance(data, list) else [data]
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    atype = item.get("@type")
+                    if atype == "Recipe" or (isinstance(atype, list) and "Recipe" in atype):
+                        return item
+                for item in items:
+                    if isinstance(item, dict):
+                        for key in ("@graph", "itemListElement", "mainEntity"):
+                            for sub in item.get(key, []):
+                                if isinstance(sub, dict):
+                                    satype = sub.get("@type")
+                                    if satype == "Recipe" or (isinstance(satype, list) and "Recipe" in satype):
+                                        return sub
             except (json.JSONDecodeError, AttributeError):
                 continue
         return None
@@ -101,17 +116,42 @@ class RecipeSiteSpider(scrapy.Spider):
             return
 
         ingredients = []
-        for li in response.css("[class*=ingredient] li, .ingredients-list li, .recipe-ingredients li"):
-            text = li.css("::text").get()
-            if text:
-                parts = self._parse_ingredient(text.strip())
-                ingredients.append(parts)
+        ingredient_selectors = [
+            "[class*=ingredient] li",
+            "[class*=Ingredient] li",
+            ".ingredients-list li",
+            ".recipe-ingredients li",
+            "[data-testid*=ingredient] li",
+            ".recipe__ingredients li",
+            ".recipe-ingredients__item",
+            "[itemprop=recipeIngredient]",
+        ]
+        for sel in ingredient_selectors:
+            for li in response.css(sel):
+                text = li.css("::text").get()
+                if text:
+                    parts = self._parse_ingredient(text.strip())
+                    ingredients.append(parts)
+            if ingredients:
+                break
 
         steps = []
-        for li in response.css("[class*=instruction] li, [class*=step] li, .recipe-method li"):
-            text = li.css("::text").get()
-            if text:
-                steps.append(text.strip())
+        step_selectors = [
+            "[class*=instruction] li",
+            "[class*=step] li",
+            "[class*=direction] li",
+            ".recipe-method li",
+            "[itemprop=recipeInstructions] li",
+            "[class*=recipeStep]",
+            "[class*=cooking-step]",
+        ]
+        for sel in step_selectors:
+            for li in response.css(sel):
+                text = li.css("::text").get()
+                if text:
+                    steps.append(text.strip())
+            if steps:
+                break
 
         return {
             "title": title.strip(),
@@ -119,7 +159,7 @@ class RecipeSiteSpider(scrapy.Spider):
             "source": self._get_source(response.url),
             "source_type": "recipe_site",
             "description": response.css("meta[name=description]::attr(content)").get() or "",
-            "image_url": response.css("meta[property=og:image]::attr(content)").get() or "",
+            "image_url": response.css("meta[property='og:image']::attr(content)").get() or "",
             "ingredients": ingredients,
             "steps": steps,
             "rating": 0.0,
@@ -133,14 +173,26 @@ class RecipeSiteSpider(scrapy.Spider):
         }
 
     def _parse_ingredient(self, text):
-        pattern = r'^([\d\s\/\.]+)?\s*([a-zA-Z\s]+)?\s*[-–]?\s*(.+)$'
-        match = re.match(pattern, text.strip())
+        text = text.strip()
+        if not text:
+            return {"name": "", "quantity": "", "unit": ""}
+        pattern = re.compile(
+            r"^([\d\s\/\.,¼½¾⅓⅔⅛⅜⅝⅞]+)?\s*"
+            r"(tablespoons|tablespoon|teaspoons|teaspoon|cups?|tbsp|tsp|ounces?|oz|"
+            r"pounds?|lbs?|grams?|g|kilograms?|kg|milliliters?|ml|liters?|l|"
+            r"fluid ounce|fl oz|pinch|dash|slices?|cloves?|"
+            r"cans?|packages?|pkg|bunches?|pieces?|whole|handful|to taste"
+            r")?\s*"
+            r"[-–]?\s*(.+)?$",
+            re.IGNORECASE,
+        )
+        match = pattern.match(text)
         if match:
-            quantity = match.group(1) or ""
-            unit = ""
-            name = match.group(3) or text.strip()
-            return {"name": name.strip(), "quantity": quantity.strip(), "unit": unit.strip()}
-        return {"name": text.strip(), "quantity": "", "unit": ""}
+            qty = match.group(1) or ""
+            unit = match.group(2) or ""
+            name = match.group(3) or text
+            return {"name": name.strip(), "quantity": qty.strip(), "unit": unit.strip()}
+        return {"name": text, "quantity": "", "unit": ""}
 
     def _get_source(self, url):
         if "allrecipes" in url:
@@ -151,6 +203,8 @@ class RecipeSiteSpider(scrapy.Spider):
             return "BBC Good Food"
         if "tasty" in url:
             return "Tasty"
+        if "seriouseats" in url:
+            return "Serious Eats"
         return "Unknown"
 
     def _extract_image(self, data):

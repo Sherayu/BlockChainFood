@@ -1,0 +1,87 @@
+{
+  "title": "Crawler Services & Sources",
+  "uid": "crawler-services",
+  "tags": ["food-discovery", "crawler"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active Sources",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 4, "x": 0, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT COUNT(*) AS active FROM crawl_source WHERE active = TRUE",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": 0}, {"color": "green", "value": 1}]}
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Total Sources",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 4, "x": 4, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT COUNT(*) AS total FROM crawl_source",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 3,
+      "title": "Total Crawls Today",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 4, "x": 8, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT COUNT(*) AS today FROM crawl_log WHERE crawled_at >= CURRENT_DATE",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "Items Extracted Over Time",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+      "datasource": "PostgreSQL",
+      "targets": [{
+        "format": "time_series",
+        "rawSql": "SELECT DATE_TRUNC('hour', crawled_at) AS time, SUM(items_extracted) AS items FROM crawl_log WHERE crawled_at > NOW() - INTERVAL '7 days' GROUP BY 1 ORDER BY 1",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 5,
+      "title": "Error Rate by Source",
+      "type": "barchart",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+      "datasource": "PostgreSQL",
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT cs.name, COUNT(cl.id) FILTER (WHERE cl.status_code >= 400 OR cl.error_message IS NOT NULL) AS errors, COUNT(cl.id) AS total FROM crawl_source cs LEFT JOIN crawl_log cl ON cl.source_id = cs.id GROUP BY cs.id, cs.name ORDER BY errors DESC",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 6,
+      "title": "Last Crawl per Source",
+      "type": "table",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 14},
+      "datasource": "PostgreSQL",
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT cs.name, cs.source_type, cs.active, cs.last_crawl, COUNT(cl.id) AS total_crawls, COALESCE(SUM(cl.items_extracted), 0) AS items FROM crawl_source cs LEFT JOIN crawl_log cl ON cl.source_id = cs.id GROUP BY cs.id, cs.name, cs.source_type, cs.active, cs.last_crawl ORDER BY cs.name",
+        "refId": "A"
+      }]
+    }
+  ]
+}

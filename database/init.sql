@@ -54,6 +54,7 @@ CREATE TABLE trending_food (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX idx_trending_food_name ON trending_food(name);
 CREATE INDEX idx_trending_food_category ON trending_food(category);
 CREATE INDEX idx_trending_food_region ON trending_food(region);
 CREATE INDEX idx_trending_food_score ON trending_food(popularity_score DESC);
@@ -61,7 +62,7 @@ CREATE INDEX idx_trending_food_discovered ON trending_food(discovered_at DESC);
 
 CREATE TABLE recipe (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    food_id UUID NOT NULL REFERENCES trending_food(id) ON DELETE CASCADE,
+    food_id UUID REFERENCES trending_food(id) ON DELETE CASCADE,
     title VARCHAR(500) NOT NULL,
     url TEXT NOT NULL,
     source VARCHAR(255),
@@ -120,6 +121,36 @@ CREATE TABLE crawl_log (
 
 CREATE INDEX idx_crawl_log_source ON crawl_log(source_id);
 CREATE INDEX idx_crawl_log_time ON crawl_log(crawled_at DESC);
+
+CREATE TABLE bot_usage_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    command VARCHAR(100) NOT NULL,
+    user_id BIGINT NOT NULL,
+    username VARCHAR(255),
+    parameters TEXT,
+    response_time_ms INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_bot_usage_command ON bot_usage_log(command);
+CREATE INDEX idx_bot_usage_time ON bot_usage_log(created_at DESC);
+CREATE INDEX idx_bot_usage_user ON bot_usage_log(user_id);
+
+CREATE TABLE trending_food_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    food_name VARCHAR(255) NOT NULL,
+    category food_category NOT NULL,
+    region region NOT NULL DEFAULT 'global',
+    popularity_score FLOAT NOT NULL DEFAULT 0.0,
+    trend_velocity FLOAT NOT NULL DEFAULT 0.0,
+    source_count INTEGER DEFAULT 0,
+    snapshot_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_trending_history_date ON trending_food_history(snapshot_date DESC);
+CREATE INDEX idx_trending_history_category ON trending_food_history(category);
+CREATE UNIQUE INDEX idx_trending_history_unique ON trending_food_history(food_name, category, snapshot_date);
 
 INSERT INTO alert_config (frequency, categories, regions, active) VALUES
     ('daily', '["desserts", "main-course", "baking"]', '["global"]', TRUE);

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import config, foods, recipes, ingredients, categories, regions, status
+from app.routers import config, foods, recipes, ingredients, categories, regions, status, analytics
 from app.middleware.rate_limiter import RateLimitMiddleware
 
 app = FastAPI(
@@ -32,6 +32,7 @@ app.include_router(ingredients.router)
 app.include_router(categories.router)
 app.include_router(regions.router)
 app.include_router(status.router)
+app.include_router(analytics.router)
 
 
 @app.get("/health", tags=["Health"])

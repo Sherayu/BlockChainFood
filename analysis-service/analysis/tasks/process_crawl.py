@@ -15,6 +15,7 @@ def process_crawl_data(self):
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     processed = 0
+    items_by_source = {}
 
     try:
         while True:
@@ -24,6 +25,10 @@ def process_crawl_data(self):
 
             try:
                 item = json.loads(raw)
+                source = item.get("source", "Unknown")
+                if source not in items_by_source:
+                    items_by_source[source] = 0
+                items_by_source[source] += 1
                 _store_item(cur, item)
                 conn.commit()
                 processed += 1
@@ -32,6 +37,9 @@ def process_crawl_data(self):
                 print(f"[Analysis] Error processing item: {e}")
 
         if processed > 0:
+            for source_name, count in items_by_source.items():
+                _log_crawl(cur, source_name, count)
+            conn.commit()
             detect_food_trends.delay()
     finally:
         cur.close()
@@ -66,6 +74,20 @@ def _store_item(cur, item):
         json.dumps(item.get("nutrition", {})),
         datetime.now(timezone.utc),
     ))
+
+
+def _log_crawl(cur, source_name, items_count):
+    cur.execute("SELECT id, url FROM crawl_source WHERE name = %s", (source_name,))
+    source = cur.fetchone()
+    if source:
+        source_id, source_url = source
+        cur.execute("""
+            INSERT INTO crawl_log (source_id, url_crawled, status_code, items_extracted, crawled_at)
+            VALUES (%s, %s, 200, %s, %s)
+        """, (source_id, source_url, items_count, datetime.now(timezone.utc)))
+        cur.execute("""
+            UPDATE crawl_source SET last_crawl = %s WHERE id = %s
+        """, (datetime.now(timezone.utc), source_id))
 
 
 from analysis.tasks.detect_trends import detect_food_trends

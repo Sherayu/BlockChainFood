@@ -140,3 +140,29 @@ async def ingredient_action_callback(update: Update, context: ContextTypes.DEFAU
                 await query.edit_message_text("Failed to extract ingredients. Please try again.")
         except httpx.RequestError:
             await query.edit_message_text("Cannot connect to the API.")
+
+
+async def foods_category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    category = query.data.replace("foods_", "")
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        try:
+            resp = await client.get(f"{API_BASE}/foods/trending", params={"category": category, "limit": 10})
+            if resp.status_code == 200:
+                foods = resp.json()
+                if not foods:
+                    await query.edit_message_text(
+                        f"No foods found in '{category}' category."
+                    )
+                    return
+
+                from bot.formatters.message_formatter import format_foods_message
+                message = format_foods_message(category, foods)
+                await query.edit_message_text(message, parse_mode="Markdown")
+            else:
+                await query.edit_message_text("Failed to fetch foods. Please try again later.")
+        except httpx.RequestError:
+            await query.edit_message_text("Cannot connect to the API.")

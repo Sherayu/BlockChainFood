@@ -65,6 +65,24 @@ def recipe_list_keyboard(recipes: list) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 
+def foods_category_keyboard() -> InlineKeyboardMarkup:
+    categories = [
+        ("🍰 Desserts", "foods_desserts"),
+        ("🥗 Starters", "foods_starters"),
+        ("🍛 Main Course", "foods_main-course"),
+        ("🥖 Baking", "foods_baking"),
+        ("☕ Beverages", "foods_beverages"),
+        ("🍿 Snacks", "foods_snacks"),
+    ]
+    keyboard = []
+    for i in range(0, len(categories), 2):
+        row = []
+        for emoji, data in categories[i:i+2]:
+            row.append(InlineKeyboardButton(emoji, callback_data=data))
+        keyboard.append(row)
+    return InlineKeyboardMarkup(keyboard)
+
+
 def configure_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("🕐 Change Frequency", callback_data="cfg_freq")],

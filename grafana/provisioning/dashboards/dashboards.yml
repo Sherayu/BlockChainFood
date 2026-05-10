@@ -1,0 +1,15 @@
+apiVersion: 1
+
+providers:
+  - name: "Food Discovery Dashboards"
+    orgId: 1
+    folder: "Food Discovery"
+    folderUid: ""
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

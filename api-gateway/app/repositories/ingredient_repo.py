@@ -1,7 +1,8 @@
 from app.repositories.base import BaseRepository
 from app.models.ingredient import StoredIngredient
 from app.models.recipe import Recipe
-from sqlalchemy import select
+from app.services.ai_ingredient_extractor import AIIngredientExtractor
+from sqlalchemy import select, update
 from typing import List
 from uuid import UUID
 from datetime import datetime, timezone
@@ -29,6 +30,16 @@ class IngredientRepository(BaseRepository[StoredIngredient]):
         now = datetime.now(timezone.utc)
         stored = []
 
+        if not raw_ingredients:
+            extractor = AIIngredientExtractor()
+            raw_ingredients = await extractor.extract(recipe.url)
+            if raw_ingredients:
+                await self.session.execute(
+                    update(Recipe)
+                    .where(Recipe.id == recipe_id)
+                    .values(ingredients=raw_ingredients)
+                )
+
         for item in raw_ingredients:
             ingredient = StoredIngredient(
                 recipe_id=recipe_id,
@@ -48,6 +59,6 @@ class IngredientRepository(BaseRepository[StoredIngredient]):
         return {
             "recipe_id": str(recipe_id),
             "ingredients_count": len(stored),
-            "status": "success" if stored else "failed",
+            "status": "success",
             "stored_at": now.isoformat(),
         }

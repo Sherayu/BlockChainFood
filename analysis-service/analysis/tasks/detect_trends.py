@@ -82,9 +82,16 @@ def detect_food_trends(self):
 
             trend_id = cur.fetchone()
             if trend_id:
+                tid = trend_id["id"]
+                cur.execute("""
+                    UPDATE recipe
+                    SET food_id = %s
+                    WHERE food_id IS NULL
+                      AND LOWER(title) LIKE %s
+                """, (tid, f"%{keyword}%"))
                 trends.append({
                     "name": keyword.title(),
-                    "id": str(trend_id["id"]),
+                    "id": str(tid),
                     "score": min(100, score),
                 })
 

@@ -71,14 +71,71 @@ class DynamicScraper:
             finally:
                 await browser.close()
 
+    JS_HEAVY_SITES = [
+        "https://www.seriouseats.com/recipes",
+    ]
+
+    async def scrape_listing(self, url: str, max_pages: int = 3) -> list:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            links = []
+            try:
+                for _ in range(max_pages):
+                    await page.goto(url, wait_until="networkidle", timeout=30000)
+                    await page.wait_for_timeout(3000)
+                    page_links = await page.eval_on_selector_all(
+                        "a[href*=recipe], a[href*=recept], article a",
+                        "elements => elements.map(el => el.href).filter(h => h)",
+                    )
+                    links.extend(page_links)
+                    next_btn = await page.query_selector("a[rel=next], .pagination a")
+                    if not next_btn:
+                        break
+                    await next_btn.click()
+                    await page.wait_for_timeout(2000)
+            except Exception:
+                pass
+            finally:
+                await browser.close()
+            return list(set(links))
+
+    async def batch_scrape(self, urls: list) -> list:
+        results = []
+        for url in urls:
+            result = await self.scrape_recipe_page(url)
+            if result and "error" not in result:
+                results.append(result)
+        return results
+
     def scrape_sync(self, url: str) -> dict:
         return asyncio.run(self.scrape_recipe_page(url))
 
+    def batch_scrape_sync(self, urls: list) -> list:
+        return asyncio.run(self.batch_scrape(urls))
+
+    def scrape_listing_sync(self, url: str, max_pages: int = 3) -> list:
+        return asyncio.run(self.scrape_listing(url, max_pages))
+
     def _get_source(self, url: str) -> str:
+        if "seriouseats" in url:
+            return "Serious Eats"
+        if "foodnetwork" in url:
+            return "Food Network"
+        if "allrecipes" in url:
+            return "AllRecipes"
         if "tasty" in url:
             return "Tasty"
         if "pinterest" in url:
             return "Pinterest"
         if "instagram" in url:
             return "Instagram"
+        if "bonappetit" in url:
+            return "Bon Appetit"
+        if "epicurious" in url:
+            return "Epicurious"
+        if "food52" in url:
+            return "Food52"
+        if "bbcgoodfood" in url:
+            return "BBC Good Food"
         return "Dynamic Source"

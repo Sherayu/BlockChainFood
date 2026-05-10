@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
+    gemini_api_key: str = ""
+    ingredient_extractor_timeout: int = 15
+    ingredient_extractor_user_agent: str = "FoodDiscoveryBot/1.0 (+https://fooddiscovery.local)"
 
     class Config:
         env_file = ".env"

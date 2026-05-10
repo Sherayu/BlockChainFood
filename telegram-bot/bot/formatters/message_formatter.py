@@ -99,15 +99,16 @@ def format_recipe_detail_message(recipe: dict) -> str:
 
 
 def format_ingredient_message(recipe_id: str, store_data: dict, ingredients: list) -> str:
-    status = store_data.get("status", "success")
     count = store_data.get("ingredients_count", 0)
 
-    if status == "success":
-        lines = ["✅ *Ingredients Stored Successfully!*\n"]
+    if count == 0:
+        lines = [
+            "⚠️ *No Ingredients Found*\n",
+            "This recipe doesn't have extractable ingredient data. ",
+            "The crawler may not have been able to parse the ingredients for this recipe.\n",
+        ]
     else:
-        lines = ["⚠️ *Ingredients Extraction Issue*\n"]
-
-    lines.append(f"*Total Ingredients:* {count}\n")
+        lines = [f"✅ *{count} Ingredients Stored*\n"]
 
     if ingredients:
         categorized = {}
@@ -131,6 +132,26 @@ def format_ingredient_message(recipe_id: str, store_data: dict, ingredients: lis
             lines.append("")
 
     lines.append(f"📝 *Recipe ID:* `{recipe_id}`")
+    return "\n".join(lines)
+
+
+def format_foods_message(category: str, foods: list) -> str:
+    emoji_map = {
+        "desserts": "🍰", "starters": "🥗", "main-course": "🍛",
+        "baking": "🥖", "beverages": "☕", "snacks": "🍿",
+    }
+    emoji = emoji_map.get(category.lower(), "🍽️")
+    lines = [f"{emoji} *{category.title()} Foods*\n"]
+    for i, food in enumerate(foods[:10], 1):
+        name = food.get("name", "Unknown")
+        score = food.get("popularity_score", 0)
+        region = food.get("region", "Global").title()
+        bar = _score_bar(score)
+        lines.append(
+            f"{i}. *{name}*\n"
+            f"   {bar} `{score:.0f}/100` | {region}\n"
+        )
+    lines.append("\n_Use /trending for all trending foods_")
     return "\n".join(lines)
 
 

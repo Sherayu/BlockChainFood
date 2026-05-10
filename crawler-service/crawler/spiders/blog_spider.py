@@ -17,6 +17,11 @@ class FoodBlogSpider(scrapy.Spider):
     custom_settings = {
         "DOWNLOAD_DELAY": 3,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
+        "ROBOTSTXT_OBEY": False,
+        "ITEM_PIPELINES": {
+            "crawler.pipelines.normalizer.DataNormalizerPipeline": 200,
+            "crawler.pipelines.publisher.RedisPublisherPipeline": 300,
+        },
     }
 
     def parse(self, response):
@@ -39,21 +44,39 @@ class FoodBlogSpider(scrapy.Spider):
             return
 
         description = response.css("meta[name=description]::attr(content)").get()
-        image = response.css("meta[property=og:image]::attr(content)").get()
+        image = response.css("meta[property='og:image']::attr(content)").get()
 
         ingredients = []
-        for ing in response.css("[class*=ingredient] li, [class*=Ingredient] li"):
-            text = ing.css("::text").get()
-            if text:
-                ingredients.append({"name": text.strip(), "quantity": "", "unit": ""})
+        sel_list = [
+            "[class*=ingredient] li",
+            "[class*=Ingredient] li",
+            "[itemprop=recipeIngredient]",
+            "[data-testid*=ingredient] li",
+        ]
+        for sel in sel_list:
+            for ing in response.css(sel):
+                text = ing.css("::text").get()
+                if text:
+                    ingredients.append({"name": text.strip(), "quantity": "", "unit": ""})
+            if ingredients:
+                break
 
         steps = []
-        for step in response.css("[class*=step] li, [class*=instruction] li, [class*=direction] li"):
-            text = step.css("::text").get()
-            if text:
-                steps.append(text.strip())
+        step_sel_list = [
+            "[class*=step] li",
+            "[class*=instruction] li",
+            "[class*=direction] li",
+            "[itemprop=recipeInstructions] li",
+        ]
+        for sel in step_sel_list:
+            for step in response.css(sel):
+                text = step.css("::text").get()
+                if text:
+                    steps.append(text.strip())
+            if steps:
+                break
 
-        yield {
+        item = {
             "title": title.strip(),
             "url": response.url,
             "source": self._get_source_name(response.url),
@@ -70,6 +93,27 @@ class FoodBlogSpider(scrapy.Spider):
             "tags": self._extract_tags(response),
             "crawled_at": datetime.now(timezone.utc).isoformat(),
         }
+
+        if not ingredients:
+            dynamic = self._try_playwright(response.url)
+            if dynamic and dynamic.get("ingredients"):
+                item["ingredients"] = dynamic["ingredients"]
+                item["steps"] = dynamic.get("steps", item["steps"])
+                item["image_url"] = dynamic.get("image_url", item["image_url"])
+                item["description"] = dynamic.get("description", item["description"])
+
+        yield item
+
+    def _try_playwright(self, url):
+        try:
+            from crawler.playwright.dynamic_scraper import DynamicScraper
+            scraper = DynamicScraper()
+            result = scraper.scrape_sync(url)
+            if result and "error" not in result:
+                return result
+        except Exception:
+            pass
+        return None
 
     def _is_recipe_url(self, url):
         skip_patterns = ["/about", "/contact", "/privacy", "/terms", "/login", "/signup", "/category"]
@@ -113,5 +157,5 @@ class FoodBlogSpider(scrapy.Spider):
         return None
 
     def _extract_tags(self, response):
-        tags = response.css("[class*=tag]::text, meta[property=article:tag]::attr(content)").getall()
+        tags = response.css("[class*=tag]::text, meta[property='article:tag']::attr(content)").getall()
         return [t.strip() for t in tags if t.strip()]

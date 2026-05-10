@@ -6,11 +6,11 @@ from bot import TELEGRAM_BOT_TOKEN
 from bot.handlers.commands import (
     start_command, help_command, categories_command,
     regions_command, trending_command, recipes_command,
-    ingredients_command, configure_command, status_command,
+    ingredients_command, configure_command, status_command, foods_command,
 )
 from bot.handlers.callbacks import (
     category_callback, region_callback, food_callback,
-    recipe_callback, ingredient_action_callback,
+    recipe_callback, ingredient_action_callback, foods_category_callback,
 )
 from bot.scheduler.alert_scheduler import AlertScheduler
 
@@ -47,10 +47,12 @@ def main():
     app.add_handler(CommandHandler("ingredients", ingredients_command))
     app.add_handler(CommandHandler("configure", configure_command))
     app.add_handler(CommandHandler("status", status_command))
+    app.add_handler(CommandHandler("foods", foods_command))
 
     app.add_handler(CallbackQueryHandler(category_callback, pattern=r"^cat_"))
     app.add_handler(CallbackQueryHandler(region_callback, pattern=r"^reg_"))
-    app.add_handler(CallbackQueryHandler(food_callback, pattern=r"^food_"))
+    app.add_handler(CallbackQueryHandler(food_callback, pattern=r"^food_\d+"))
+    app.add_handler(CallbackQueryHandler(foods_category_callback, pattern=r"^foods_"))
     app.add_handler(CallbackQueryHandler(recipe_callback, pattern=r"^recipe_"))
     app.add_handler(CallbackQueryHandler(ingredient_action_callback, pattern=r"^ing_"))
 

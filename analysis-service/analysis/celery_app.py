@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 from analysis import REDIS_URL
 
 celery_app = Celery(
@@ -9,6 +10,7 @@ celery_app = Celery(
         "analysis.tasks.process_crawl",
         "analysis.tasks.detect_trends",
         "analysis.tasks.extract_ingredients",
+        "analysis.tasks.snapshot_trends",
     ],
 )
 
@@ -22,4 +24,21 @@ celery_app.conf.update(
     task_time_limit=30 * 60,
     task_soft_time_limit=25 * 60,
     worker_max_tasks_per_child=100,
+    beat_schedule={
+        "process-crawl-every-5-minutes": {
+            "task": "analysis.tasks.process_crawl.process_crawl_data",
+            "schedule": crontab(minute="*/5"),
+            "options": {"expires": 60},
+        },
+        "detect-trends-every-15-minutes": {
+            "task": "analysis.tasks.detect_trends.detect_food_trends",
+            "schedule": crontab(minute="*/15"),
+            "options": {"expires": 120},
+        },
+        "snapshot-trends-daily-midnight": {
+            "task": "analysis.tasks.snapshot_trends.snapshot_trending_foods",
+            "schedule": crontab(hour=0, minute=0),
+            "options": {"expires": 3600},
+        },
+    },
 )

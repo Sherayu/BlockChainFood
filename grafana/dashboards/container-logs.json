@@ -1,0 +1,57 @@
+{
+  "title": "Container Logs & Critical Errors",
+  "uid": "container-logs",
+  "tags": ["food-discovery", "logs", "errors"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Live Log Stream",
+      "type": "logs",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 0},
+      "datasource": "Loki",
+      "targets": [{"expr": "{job=\"food-discovery\"}", "refId": "A"}]
+    },
+    {
+      "id": 2,
+      "title": "Errors by Container",
+      "type": "barchart",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 10},
+      "datasource": "Loki",
+      "targets": [{"expr": "count by (container) ({job=\"food-discovery\"} |= \"error\")", "refId": "A", "legendFormat": "{{container}}"}]
+    },
+    {
+      "id": 3,
+      "title": "Error Rate Over Time",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10},
+      "datasource": "Loki",
+      "targets": [{"expr": "rate({job=\"food-discovery\"} |= \"error\" [5m])", "refId": "A"}]
+    },
+    {
+      "id": 4,
+      "title": "Critical Error Details",
+      "type": "table",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 18},
+      "datasource": "Loki",
+      "targets": [{"expr": "{job=\"food-discovery\"} |= \"error\" | line_format \"{{.container}}: {{.__error__}}\"", "refId": "A"}]
+    },
+    {
+      "id": 5,
+      "title": "Log Volume by Container",
+      "type": "barchart",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 28},
+      "datasource": "Loki",
+      "targets": [{"expr": "count by (container) ({job=\"food-discovery\"})", "refId": "A", "legendFormat": "{{container}}"}]
+    },
+    {
+      "id": 6,
+      "title": "Warning Logs Timeline",
+      "type": "logs",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 28},
+      "datasource": "Loki",
+      "targets": [{"expr": "{job=\"food-discovery\"} |= \"warning\"", "refId": "A"}]
+    }
+  ]
+}

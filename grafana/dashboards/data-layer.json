@@ -1,0 +1,81 @@
+{
+  "title": "Data Layer Analytics",
+  "uid": "data-layer",
+  "tags": ["food-discovery", "data"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total Trending Foods",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT COUNT(*) AS value FROM trending_food", "refId": "A"}]
+    },
+    {
+      "id": 2,
+      "title": "Total Recipes",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT COUNT(*) AS value FROM recipe", "refId": "A"}]
+    },
+    {
+      "id": 3,
+      "title": "Total Stored Ingredients",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT COUNT(*) AS value FROM stored_ingredient", "refId": "A"}]
+    },
+    {
+      "id": 4,
+      "title": "Total Crawl Logs",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT COUNT(*) AS value FROM crawl_log", "refId": "A"}]
+    },
+    {
+      "id": 5,
+      "title": "Foods by Category",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 4},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT category::text AS category, COUNT(*) AS count FROM trending_food GROUP BY category ORDER BY count DESC", "refId": "A"}]
+    },
+    {
+      "id": 6,
+      "title": "Recipes by Source Type",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 4},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT source_type::text AS source, COUNT(*) AS count FROM recipe GROUP BY source_type ORDER BY count DESC", "refId": "A"}]
+    },
+    {
+      "id": 7,
+      "title": "Foods by Region",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 4},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT region::text AS region, COUNT(*) AS count FROM trending_food GROUP BY region ORDER BY count DESC", "refId": "A"}]
+    },
+    {
+      "id": 8,
+      "title": "Popularity Score Distribution",
+      "type": "histogram",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "table", "rawSql": "SELECT popularity_score FROM trending_food", "refId": "A"}]
+    },
+    {
+      "id": 9,
+      "title": "Trending Food History (7 Days)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "datasource": "PostgreSQL",
+      "targets": [{"format": "time_series", "rawSql": "SELECT snapshot_date AS time, AVG(popularity_score) AS avg_score, MAX(popularity_score) AS max_score FROM trending_food_history WHERE snapshot_date > CURRENT_DATE - INTERVAL '7 days' GROUP BY 1 ORDER BY 1", "refId": "A"}]
+    }
+  ]
+}
